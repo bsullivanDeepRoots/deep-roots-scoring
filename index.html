@@ -82,6 +82,7 @@ async function renderRostersAdmin(){
   try{
     const data=await rosterData();
     const by=Object.fromEntries(S.teams.map(t=>[t.id,t.name]));
+    data.sort((a,b)=>(by[a.team_id]||"").localeCompare(by[b.team_id]||"",undefined,{sensitivity:"base"}));
     if(!data.length){box.innerHTML='<div class="empty">No team rosters submitted yet.</div>';return}
     const totalMen=data.reduce((sum,r)=>sum+(Number(r.team_size)||0),0);
     box.innerHTML='<div class="rosterTotal"><b>TOTAL MEN ON ROSTERS: '+totalMen+'</b></div><div class="rosterAdminWrap"><table class="rosterAdminTable"><thead><tr><th>TEAM</th><th>TEAM Captain</th><th>Other TEAM Members</th><th>Men</th><th></th></tr></thead><tbody>'+data.map(r=>{let m=Array.isArray(r.members)?r.members:[],cap=m[0]||{},others=m.slice(1);return '<tr><td>'+esc(by[r.team_id]||"Unknown Team")+'</td><td><b>'+esc(cap.name||"")+'</b><div class="memberEmail">'+esc(cap.email||"")+'</div></td><td>'+others.map(x=>'<div class="memberLine"><b>'+esc(x.name||"")+'</b><div class="memberEmail">'+esc(x.email||"")+'</div></div>').join("")+'</td><td>'+r.team_size+'</td><td><button class="danger" data-delroster="'+r.id+'">Delete</button></td></tr>'}).join("")+'</tbody></table></div>';
