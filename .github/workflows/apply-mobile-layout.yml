@@ -1,0 +1,74 @@
+name: Apply mobile layout updates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-mobile-layout.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply requested changes with rollback backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='<button class="tab" data-v="admin">Admin</button>'
+          new='<button class="tab" data-v="admin">Admin (Restricted)</button>'
+          if old in s:
+              s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+
+          if ! git diff --quiet -- index.html; then
+            git add index.html
+            git commit -m "Label admin navigation as restricted"
+            git push origin HEAD:main
+          fi
+
+          BACKUP="admin-restricted-before-mobile-pdf-backup"
+          git branch -f "$BACKUP" HEAD
+          git push --force origin "$BACKUP"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          marker='/* Mobile navigation requested order */'
+          if marker not in s:
+              needle='@media(max-width:720px){.tabs{grid-template-columns:repeat(3,1fr)}'
+              repl='@media(max-width:720px){.tabs{grid-template-columns:repeat(3,1fr)}'+marker+'.tab[data-v="gettingStarted"]{order:1}.tab[data-v="roster"]{order:2}.tab[data-v="admin"]{order:3}.tab[data-v="missions"]{order:4}.tab[data-v="entry"]{order:5}.tab[data-v="board"]{order:6}'
+              if needle not in s:
+                  raise SystemExit('Expected mobile navigation CSS not found; refusing unsafe edit')
+              s=s.replace(needle,repl,1)
+
+          old='preview.innerHTML=\'<div style="margin-top:14px"><iframe src="\'+url+\'" title="Getting Started PDF" style="width:100%;height:75vh;border:1px solid #b8b09c"></iframe></div>\''
+          new='preview.innerHTML=\'<div class="gettingStartedPdfViewer" style="margin-top:14px;max-width:100%;overflow:hidden"><iframe src="\'+url+\'#view=FitH&zoom=page-width" title="Getting Started PDF" style="display:block;width:100%;max-width:100%;height:75vh;border:1px solid #b8b09c" allow="fullscreen"></iframe></div>\''
+          if old in s:
+              s=s.replace(old,new,1)
+          elif 'gettingStartedPdfViewer' not in s:
+              raise SystemExit('Expected PDF iframe code not found; refusing unsafe edit')
+
+          p.write_text(s)
+          PY
+
+          if ! git diff --quiet -- index.html; then
+            git add index.html
+            git commit -m "Reorder mobile navigation and fit Getting Started PDF"
+            git push origin HEAD:main
+          fi
