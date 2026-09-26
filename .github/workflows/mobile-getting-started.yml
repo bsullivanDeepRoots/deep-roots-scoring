@@ -1,0 +1,34 @@
+name: Mobile Getting Started Layout
+
+on:
+  push:
+    paths:
+      - '.github/workflows/mobile-getting-started.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-mobile-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make Getting Started steps vertical on phones
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          marker = '@media(max-width:720px){.tabs{grid-template-columns:repeat(3,1fr)}.tab{font-size:10px;padding:8px 3px;white-space:normal}.missionsGrid{grid-template-columns:1fr;grid-template-rows:none;grid-auto-flow:row}}'
+          replacement = '@media(max-width:720px){.tabs{grid-template-columns:repeat(3,1fr)}.tab{font-size:10px;padding:8px 3px;white-space:normal}.missionsGrid{grid-template-columns:1fr;grid-template-rows:none;grid-auto-flow:row}#gettingStartedActions{flex-direction:column!important;align-items:stretch!important;gap:6px!important}#gettingStartedActions .gettingStartedAction{display:flex;width:100%;align-items:center;justify-content:center;text-align:center;white-space:normal}.stepArrow{align-self:center;transform:rotate(90deg) scaleY(1.35);margin:2px 0}#gettingStartedPdfButton{display:block;width:100%}#gettingStartedPdfButton .gettingStartedAction{width:100%}}'
+          if marker not in s:
+              raise SystemExit('Expected mobile CSS marker not found; no changes made.')
+          p.write_text(s.replace(marker, replacement, 1))
+          PY
+      - name: Commit targeted change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Make Getting Started steps vertical on mobile'
+          git push
