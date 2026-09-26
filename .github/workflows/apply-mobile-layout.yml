@@ -1,4 +1,4 @@
-name: Enable mobile scoreboard pan and scroll
+name: Use new Deep Roots favicon
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Allow normal touch scrolling and panning on scoreboard
+      - name: Point browser icon to new Deep Roots favicon
         shell: bash
         run: |
           set -euo pipefail
@@ -24,16 +24,15 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
-          # The previous pinch-zoom-only declaration blocked normal one-finger panning.
-          s=s.replace('touch-action:pinch-zoom','touch-action:auto')
-          marker='/* Mobile scoreboard natural pan and scroll */'
-          css='''\n<style>\n'''+marker+'''\n@media(max-width:950px){\n  html,body{touch-action:auto;overflow-x:auto}\n  .scoreTableWrap{touch-action:auto;-webkit-overflow-scrolling:touch}\n}\n@media(max-width:720px) and (orientation:portrait){\n  .scoreTableWrap{overflow-x:auto;overflow-y:visible}\n}\n@media(max-width:950px) and (orientation:landscape){\n  .scoreTableWrap{overflow-x:auto;overflow-y:visible}\n}\n</style>\n'''
-          if marker not in s:
-              s=s.replace('</head>',css+'</head>',1)
+          old='<link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="favicon.png">'
+          new='<link rel="icon" type="image/png" href="deep-roots-favicon.png?v=20260926"><link rel="apple-touch-icon" href="deep-roots-favicon.png?v=20260926">'
+          if old not in s:
+              raise SystemExit('Expected favicon links not found; refusing unsafe edit')
+          s=s.replace(old,new,1)
           p.write_text(s)
           PY
           if ! git diff --quiet -- index.html; then
             git add index.html
-            git commit -m "Allow scoreboard scrolling panning and pinch zoom on mobile"
+            git commit -m "Use new Deep Roots favicon"
             git push origin HEAD:main
           fi
