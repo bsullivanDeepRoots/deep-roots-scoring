@@ -1,4 +1,4 @@
-name: Mobile scoreboard team score placement
+name: Fix mobile Getting Started PDF viewer
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Put total score beside team name on mobile
+      - name: Restore full PDF and mobile-friendly viewing
         shell: bash
         run: |
           set -euo pipefail
@@ -24,21 +24,15 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
-          marker='/* Mobile scoreboard: team name with total score beside it */'
-          if marker not in s:
-              insert='''\n<style>\n'''+marker+'''\n@media(max-width:720px){\n  .scoreTable{min-width:760px}\n  .scoreTable th:nth-child(2),.scoreTable td:nth-child(2){min-width:230px;padding-right:58px}\n  .scoreTable td:nth-child(2){position:sticky}\n  .scoreTable td:nth-child(2)::after{content:attr(data-mobile-total);position:absolute;right:8px;top:50%;transform:translateY(-50%);font-weight:900;color:var(--forest);font-size:16px}\n}\n</style>\n'''
-              s=s.replace('</head>',insert+'</head>',1)
-          # Add the row total as a data attribute on the team-name cell during board rendering.
-          old="'<td><b>'+esc(t.name)+'</b></td>'"
-          new="'<td data-mobile-total=\"'+(sum?sum.toFixed(2):'—')+'\"><b>'+esc(t.name)+'</b></td>'"
-          if old in s:
-              s=s.replace(old,new,1)
-          elif 'data-mobile-total' not in s:
-              raise SystemExit('Expected scoreboard team cell renderer not found; refusing unsafe edit')
+          old='preview.innerHTML=\'<div class="gettingStartedPdfViewer" style="margin-top:14px;max-width:100%;overflow:hidden"><iframe src="\'+url+\'#view=FitH&zoom=page-width" title="Getting Started PDF" style="display:block;width:100%;max-width:100%;height:75vh;border:1px solid #b8b09c" allow="fullscreen"></iframe></div>\''
+          new='preview.innerHTML=\'<div class="gettingStartedPdfViewer" style="margin-top:14px;width:100%;max-width:100%;overflow:hidden"><object data="\'+url+\'" type="application/pdf" title="Getting Started PDF" style="display:block;width:100%;max-width:100%;height:75vh;border:1px solid #b8b09c"><p>Your phone PDF viewer works best in a separate window. <a href="\'+url+\'" target="_blank" rel="noopener">Open the full Getting Started PDF</a></p></object></div>\''
+          if old not in s:
+              raise SystemExit('Expected current Getting Started PDF viewer not found; refusing unsafe edit')
+          s=s.replace(old,new,1)
           p.write_text(s)
           PY
           if ! git diff --quiet -- index.html; then
             git add index.html
-            git commit -m "Show team total beside team name on mobile scoreboard"
+            git commit -m "Restore full Getting Started PDF on mobile"
             git push origin HEAD:main
           fi
