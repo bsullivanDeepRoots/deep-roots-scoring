@@ -1,4 +1,4 @@
-name: Add mobile Team Score column
+name: Optimize mobile scoreboard portrait and landscape
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show Team Score beside Team on mobile scoreboard
+      - name: Fit rank team and total in portrait while preserving landscape detail
         shell: bash
         run: |
           set -euo pipefail
@@ -24,19 +24,14 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
-          old="let head='<div class=\"scoreTableWrap\"><table class=\"scoreTable\"><thead><tr><th>Rank</th><th>Team</th>'+Array.from({length:8},(_,i)=>'<th>W'+(i+1)+'</th>').join('')+'<th>TOTAL</th></tr></thead><tbody>';let body=r.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(x.n)+'</b></td>'+Array.from({length:8},(_,j)=>'<td>'+(Number.isFinite(x.weeks[j+1])?Math.round(x.weeks[j+1]*100)/100:'—')+'</td>').join('')+'<td>'+Math.round(x.total*100)/100+'</td></tr>').join('');"
-          new="let head='<div class=\"scoreTableWrap\"><table class=\"scoreTable\"><thead><tr><th>Rank</th><th>Team</th><th class=\"mobileTeamScore\">Team Score</th>'+Array.from({length:8},(_,i)=>'<th>W'+(i+1)+'</th>').join('')+'<th>TOTAL</th></tr></thead><tbody>';let body=r.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(x.n)+'</b></td><td class=\"mobileTeamScore\">'+Math.round(x.total*100)/100+'</td>'+Array.from({length:8},(_,j)=>'<td>'+(Number.isFinite(x.weeks[j+1])?Math.round(x.weeks[j+1]*100)/100:'—')+'</td>').join('')+'<td>'+Math.round(x.total*100)/100+'</td></tr>').join('');"
-          if old not in s:
-              raise SystemExit('Expected scoreboard renderer not found; refusing unsafe edit')
-          s=s.replace(old,new,1)
-          marker='/* Explicit mobile Team Score column */'
-          css='''\n<style>\n'''+marker+'''\n.mobileTeamScore{display:none}\n@media(max-width:720px){\n  .scoreTable .mobileTeamScore{display:table-cell!important;position:sticky;left:228px;z-index:3;min-width:100px;text-align:center;font-weight:900}\n  .scoreTable thead .mobileTeamScore{background:#102c20;color:#f8f3e7;z-index:5}\n  .scoreTable tbody .mobileTeamScore{background:#eee7d7;color:var(--forest);border-left:2px solid #c6a45f}\n  .scoreTable tbody tr:nth-child(even) .mobileTeamScore{background:#e8e2d5}\n}\n</style>\n'''
+          marker='/* Portrait scoreboard summary; landscape full detail */'
+          css='''\n<style>\n'''+marker+'''\n@media (max-width:720px) and (orientation:portrait){\n  #board .card{padding-left:10px;padding-right:10px}\n  .scoreTableWrap{width:100%;max-width:100%;overflow:visible;touch-action:pinch-zoom}\n  .scoreTable{width:100%;min-width:0;table-layout:fixed}\n  .scoreTable th,.scoreTable td{position:static!important;padding:10px 5px;font-size:13px;white-space:normal}\n  .scoreTable th:nth-child(1),.scoreTable td:nth-child(1){display:table-cell!important;width:14%;text-align:center}\n  .scoreTable th:nth-child(2),.scoreTable td:nth-child(2){display:table-cell!important;width:54%;min-width:0;text-align:left}\n  .scoreTable .mobileTeamScore{display:table-cell!important;width:32%;min-width:0;text-align:center;font-weight:900}\n  .scoreTable th:nth-child(n+4),.scoreTable td:nth-child(n+4){display:none!important}\n  .scoreTable thead .mobileTeamScore{background:#102c20;color:#f8f3e7}\n  .scoreTable tbody .mobileTeamScore{background:#eee7d7;color:var(--forest);border-left:2px solid #c6a45f}\n  .scoreTable tbody tr:nth-child(even) .mobileTeamScore{background:#e8e2d5}\n}\n@media (max-width:950px) and (orientation:landscape){\n  .scoreTableWrap{overflow-x:auto;touch-action:pinch-zoom}\n  .scoreTable{min-width:900px;table-layout:auto}\n  .scoreTable .mobileTeamScore{display:none!important}\n}\n</style>\n'''
           if marker not in s:
               s=s.replace('</head>',css+'</head>',1)
           p.write_text(s)
           PY
           if ! git diff --quiet -- index.html; then
             git add index.html
-            git commit -m "Add Team Score column beside Team on mobile scoreboard"
+            git commit -m "Optimize scoreboard for portrait and landscape mobile"
             git push origin HEAD:main
           fi
