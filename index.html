@@ -75,7 +75,7 @@ select,input{border-radius:4px;border-width:2px}.scores input{background:#fbfaf5
 /* Portrait scoreboard summary; landscape full detail */
 @media (max-width:720px) and (orientation:portrait){
   #board .card{padding-left:10px;padding-right:10px}
-  .scoreTableWrap{width:100%;max-width:100%;overflow:visible;touch-action:pinch-zoom}
+  .scoreTableWrap{width:100%;max-width:100%;overflow:visible;touch-action:auto}
   .scoreTable{width:100%;min-width:0;table-layout:fixed}
   .scoreTable th,.scoreTable td{position:static!important;padding:10px 5px;font-size:13px;white-space:normal}
   .scoreTable th:nth-child(1),.scoreTable td:nth-child(1){display:table-cell!important;width:14%;text-align:center}
@@ -87,9 +87,23 @@ select,input{border-radius:4px;border-width:2px}.scores input{background:#fbfaf5
   .scoreTable tbody tr:nth-child(even) .mobileTeamScore{background:#e8e2d5}
 }
 @media (max-width:950px) and (orientation:landscape){
-  .scoreTableWrap{overflow-x:auto;touch-action:pinch-zoom}
+  .scoreTableWrap{overflow-x:auto;touch-action:auto}
   .scoreTable{min-width:900px;table-layout:auto}
   .scoreTable .mobileTeamScore{display:none!important}
+}
+</style>
+
+<style>
+/* Mobile scoreboard natural pan and scroll */
+@media(max-width:950px){
+  html,body{touch-action:auto;overflow-x:auto}
+  .scoreTableWrap{touch-action:auto;-webkit-overflow-scrolling:touch}
+}
+@media(max-width:720px) and (orientation:portrait){
+  .scoreTableWrap{overflow-x:auto;overflow-y:visible}
+}
+@media(max-width:950px) and (orientation:landscape){
+  .scoreTableWrap{overflow-x:auto;overflow-y:visible}
 }
 </style>
 </head><body><div class="wrap">
